@@ -30,165 +30,21 @@ def call(body) {
     }
 
     def sha
-    def list = """
----
-apiVersion: v1
-kind: List
-items:
-"""
+    
+    // def db_yaml = readFile file: "src/rest/k8s-yaml/yodaRest_secret_db.yaml"
+    // def keys_yaml = readFile file: "src/rest/k8s-yaml/yodaRest_secret_keys.yaml"
+    // def deploy_yaml = readFile file: "src/rest/k8s-yaml/yodaRest_deployment_https.yaml"
+    // def service_yaml = readFile file: "src/rest/k8s-yaml/yodaRest_service_https.yaml"
+    // def cert_yaml = readFile file: "src/rest/k8s-yaml/yodaRest_secret_https_cert.yaml"
+    // def ingress_yaml = readFile file: "src/rest/k8s-yaml/yodaRest_ingress_https.yaml"
+    yaml = readFile file: "src/rest/k8s-yaml/yodaRest_list.template.yaml"
+    yaml = yaml.replaceAll('YODA_STAGING_NAMESPACE',utils.environmentNamespace('staging'))
+    yaml = yaml.replaceAll('STAGING_IMAGE_REPOSITORY',"${env.FABRIC8_DOCKER_REGISTRY_SERVICE_HOST}:${env.FABRIC8_DOCKER_REGISTRY_SERVICE_PORT}")
+    yaml = yaml.replaceAll('YODA_STAGING_IMAGE_NAME',utils.getNamespace() + "/${env.JOB_NAME}")
+    yaml = yaml.replaceAll('YODA_STAGING_IMAGE_TAG',"${env.VERSION}")
+    yaml = yaml.replaceAll('YODA_RESTAPI_SERVICE_STAGING_NAME',"${SERVICE_NAME}")
 
-def service = """
-- apiVersion: v1
-  kind: Service
-  metadata:
-    annotations:
-      fabric8.io/iconUrl: ${config.icon}
-    labels:
-      provider: fabric8
-      project: ${env.JOB_NAME}
-      expose: '${expose}'
-      version: ${config.version}
-      group: quickstart
-    name: ${env.JOB_NAME}
-  spec:
-    ports:
-    - port: 80
-      protocol: TCP
-      targetPort: ${config.port}
-    selector:
-      project: ${env.JOB_NAME}
-      provider: fabric8
-      group: quickstart
-"""
+    echo 'using resources:\n' + yaml
+    return yaml
 
-def deployment = """
-- apiVersion: extensions/v1beta1
-  kind: Deployment
-  metadata:
-    annotations:
-      fabric8.io/iconUrl: ${config.icon}
-    labels:
-      provider: fabric8
-      project: ${env.JOB_NAME}
-      version: ${config.version}
-      group: quickstart
-    name: ${env.JOB_NAME}
-  spec:
-    replicas: 1
-    selector:
-      matchLabels:
-        provider: fabric8
-        project: ${env.JOB_NAME}
-        group: quickstart
-    template:
-      metadata:
-        labels:
-          provider: fabric8
-          project: ${env.JOB_NAME}
-          version: ${config.version}
-          group: quickstart
-      spec:
-        containers:
-        - env:
-          - name: KUBERNETES_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          image: ${fabric8Registry}${env.KUBERNETES_NAMESPACE}/${env.JOB_NAME}:${config.version}
-          imagePullPolicy: IfNotPresent
-          name: ${env.JOB_NAME}
-          ports:
-          - containerPort: ${config.port}
-            name: http
-          resources:
-            limits:
-              cpu: ${requestCPU}
-              memory: ${requestMemory}
-            requests:
-              cpu: ${limitCPU}
-              memory: ${limitMemory}
-        terminationGracePeriodSeconds: 2
-"""
-
-def deploymentConfig = """
-- apiVersion: v1
-  kind: DeploymentConfig
-  metadata:
-    annotations:
-      fabric8.io/iconUrl: ${config.icon}
-    labels:
-      provider: fabric8
-      project: ${env.JOB_NAME}
-      version: ${config.version}
-      group: quickstart
-    name: ${env.JOB_NAME}
-  spec:
-    replicas: 1
-    selector:
-      provider: fabric8
-      project: ${env.JOB_NAME}
-      group: quickstart
-    template:
-      metadata:
-        labels:
-          provider: fabric8
-          project: ${env.JOB_NAME}
-          version: ${config.version}
-          group: quickstart
-      spec:
-        containers:
-        - env:
-          - name: KUBERNETES_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          image: ${env.JOB_NAME}:${config.version}
-          imagePullPolicy: IfNotPresent
-          name: ${env.JOB_NAME}
-          ports:
-          - containerPort: ${config.port}
-            name: http
-          resources:
-            limits:
-              cpu: ${requestCPU}
-              memory: ${requestMemory}
-            requests:
-              cpu: ${limitCPU}
-              memory: ${limitMemory}
-        terminationGracePeriodSeconds: 2
-    triggers:
-    - type: ConfigChange
-    - imageChangeParams:
-        automatic: true
-        containerNames:
-        - ${env.JOB_NAME}
-        from:
-          kind: ImageStreamTag
-          name: ${env.JOB_NAME}:${config.version}
-      type: ImageChange
-"""
-
-    def is = """
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    name: ${env.JOB_NAME}
-  spec:
-    tags:
-    - from:
-        kind: ImageStreamImage
-        name: ${env.JOB_NAME}@${isSha}
-        namespace: ${utils.getNamespace()}
-      name: ${config.version}
-"""
-
-  if (flow.isOpenShift()){
-    yaml = list + service + is + deploymentConfig
-  } else {
-    yaml = list + service + deployment
-  }
-
-  echo 'using resources:\n' + yaml
-  return yaml
-
-  }
+}

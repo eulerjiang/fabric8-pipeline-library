@@ -20,9 +20,15 @@ def call(Map parameters = [:], body) {
         }
     } else {
         echo 'Mounting docker socket to build docker images'
-        podTemplate(label: label, serviceAccount: 'jenkins', inheritFrom: "${inheritFrom}",
-                containers: [[name: 'clients', image: "${clientsImage}", command: 'cat', privileged: true, ttyEnabled: true, envVars: [[key: 'DOCKER_CONFIG', value: '/home/jenkins/.docker/']]]],
+        podTemplate(label: label, serviceAccount: 'jenkins', inheritFrom: "${inheritFrom}",containers: [
+            containerTemplate(name: 'clients', image: "${clientsImage}", ttyEnabled: true, command: 'cat', privileged: true, envVars: [[key: 'DOCKER_CONFIG', value: '/home/jenkins/.docker/']]),
+            containerTemplate(name: 'python', image: 'python:2.7-wheezy', ttyEnabled: true, command: 'cat', privileged: true, envVars: [[key: 'DOCKER_CONFIG', value: '/home/jenkins/.docker/']]),
+            containerTemplate(name: 'golang', image: 'golang:1.8.0', ttyEnabled: true, command: 'cat',  privileged: true, envVars: [[key: 'DOCKER_CONFIG', value: '/home/jenkins/.docker/']]),                
+            containerTemplate(name: 'postgres', image: 'postgres:9.1', ttyEnabled: true, command: 'cat',  privileged: true, envVars: [[key: 'DOCKER_CONFIG', value: '/home/jenkins/.docker/']]),                
+            containerTemplate(name: 'jmeter', image: 'floodio/jmeter:latest', ttyEnabled: true, command: 'cat', privileged: true, envVars: [[key: 'DOCKER_CONFIG', value: '/home/jenkins/.docker/']])],
+   
                 volumes: [
+                        secretVolume(secretName: 'arts01-secret', mountPath: '/home/jenkins/.arts01'),
                         secretVolume(secretName: 'jenkins-docker-cfg', mountPath: '/home/jenkins/.docker'),
                         secretVolume(secretName: 'jenkins-hub-api-token', mountPath: '/home/jenkins/.apitoken'),
                         hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock')],

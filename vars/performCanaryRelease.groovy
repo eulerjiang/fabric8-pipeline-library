@@ -33,8 +33,10 @@ def dockerBuild(version){
     def flow = new Fabric8Commands()
     def namespace = utils.getNamespace()
     def newImageName = "${env.FABRIC8_DOCKER_REGISTRY_SERVICE_HOST}:${env.FABRIC8_DOCKER_REGISTRY_SERVICE_PORT}/${namespace}/${env.JOB_NAME}:${version}"
-
-    sh "docker build -t ${newImageName} ."
+    container('golang') {
+    sh "export GOPATH=`pwd` && env |grep GOPATH && cd src/rest && go build rest && ls -l rest"
+    }
+    sh "pwd && cd src/rest && docker build -t ${newImageName} ."
     if (flow.isSingleNode()) {
         sh "echo 'Running on a single node, skipping docker push as not needed'"
     } else {
@@ -85,3 +87,4 @@ spec:
     type: Docker
 """
 }
+
