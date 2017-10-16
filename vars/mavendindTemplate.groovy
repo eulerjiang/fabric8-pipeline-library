@@ -11,6 +11,15 @@ def call(Map parameters = [:], body) {
 
     def flow = new io.fabric8.Fabric8Commands()
 
+    def dockerCmdImage = "docker:1.12.6"
+    def dockerDaemonImage = "docker:1.12.6-dind"
+    if (env.DOCKER_DIND_REGISTRY) {
+        def localDockerRegistry = "${env.DOCKER_DIND_REGISTRY}"
+        dockerCmdImage = "${localDockerRegistry}/docker:1.12.6-01"
+        dockerDaemonImage = "${localDockerRegistry}/docker:1.12.6-dind-01"
+        println "Using docker image from ${dockerCmdImage}"
+    }
+
     if (flow.isOpenShift()) {
         podTemplate(label: label, inheritFrom: "${inheritFrom}",
                 containers: [
@@ -34,16 +43,16 @@ def call(Map parameters = [:], body) {
                 containers: [
                         [name: 'maven', image: "${mavenImage}", command: 'cat', ttyEnabled: true,
                             envVars: [
-                                    [key: 'MAVEN_OPTS', value: '-Duser.home=/root/']
-                                  ]
+                                       [key: 'MAVEN_OPTS', value: '-Duser.home=/root/']
+                                     ]
                         ],
-                        [name: 'docker-cmds', image: 'docker:1.12.6', command: 'cat', ttyEnabled: true,
+                        [name: 'clients', image: "${clientsImage}", command: 'cat', ttyEnabled: true, privileged: true],
+                        [name: 'docker-cmds', image: "${dockerCmdImage}", command: 'cat', ttyEnabled: true,
                             envVars: [[key: 'DOCKER_HOST', value: 'tcp://localhost:2375']]
                         ],
-                        [name: 'dind-daemon', image: 'docker:1.12.6-dind', ttyEnabled: true, privileged: true,
+                        [name: 'dind-daemon', image: "${dockerDaemonImage}", ttyEnabled: true, privileged: true,
                             envVars: [[key: 'DOCKER_CONFIG', value: '/home/jenkins/.docker/']]
                         ]],
-
                 volumes: [secretVolume(secretName: 'jenkins-maven-settings', mountPath: '/root/.m2'),
                           persistentVolumeClaim(claimName: 'jenkins-mvn-local-repo', mountPath: '/root/.mvnrepo'),
                           secretVolume(secretName: 'jenkins-docker-cfg', mountPath: '/home/jenkins/.docker'),
