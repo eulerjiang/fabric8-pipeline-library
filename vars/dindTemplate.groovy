@@ -15,7 +15,7 @@ def call(Map parameters = [:], body) {
     def dockerDaemonImage = "docker:1.12.6-dind"
     if (env.DOCKER_DIND_REGISTRY) {
         def localDockerRegistry = "${env.DOCKER_DIND_REGISTRY}"
-        dockerCmdImage = "${localDockerRegistry}/docker:1.12.6-01"
+        dockerCmdImage = "${localDockerRegistry}/docker:1.12.6-cams"
         dockerDaemonImage = "${localDockerRegistry}/docker:1.12.6-dind-01"
         println "Using docker image from ${dockerCmdImage}"
     }
