@@ -43,9 +43,11 @@ def call(Map parameters = [:], body) {
                 containers: [
                         [name: 'clients', image: "${clientsImage}", command: 'cat', ttyEnabled: true, privileged: true],
                         [name: 'docker-cmds', image: "${dockerCmdImage}", ttyEnabled: true,
+                            resourceRequestMemory: '1Gi', resourceRequestCpu: '800m',
                             envVars: [[key: 'DOCKER_HOST', value: 'tcp://localhost:2375']]
                         ],
                         [name: 'dind-daemon', image: "${dockerDaemonImage}", ttyEnabled: true, privileged: true,
+                            resourceRequestMemory: '1Gi', resourceRequestCpu: '800m',
                             envVars: [[key: 'DOCKER_CONFIG', value: '/home/jenkins/.docker/']]
                         ]],
                 volumes: [secretVolume(secretName: 'jenkins-maven-settings', mountPath: '/root/.m2'),
